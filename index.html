@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K1zAHFplwb2vNocVzta+xiJciyzkuY8ENabNHHzDVVI='; style-src 'sha256-Bb9jL6oNUbGUIZFihVhZmXzpH97iuRIOs97Pj64WYCA='; base-uri 'none'; form-action 'none'; connect-src 'none'">
+  <title>旅行予約台帳</title>
+  <style>:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", sans-serif;
+  line-height: 1.55;
+  color: #19273c;
+  background: #f2f5fa;
+  --muted: #475979;
+  --line: #d9e1ee;
+  --navy: #182d51;
+  --accent: #1e518c;
+  --surface: #fff;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none; }
+
+body { margin: 0; overflow-wrap: anywhere; }
+h1, h2, p, dl, dd { margin: 0; }
+a { color: var(--accent); text-underline-offset: .18em; }
+:focus-visible { outline: 3px solid #2564aa; outline-offset: 3px; }
+
+.shell { width: min(100% - 2rem, 70rem); margin-inline: auto; }
+.masthead { background: var(--navy); color: white; }
+.masthead-inner {
+  min-height: 4rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .25rem 1rem;
+  padding-block: .55rem;
+}
+.brand { font-weight: 700; letter-spacing: .045em; }
+.demo { color: #e1ebfc; font-size: .875rem; }
+
+.page-intro { padding-block: 1.6rem 1rem; }
+.page-intro h1 { font-size: clamp(1.9rem, 4vw, 2.75rem); line-height: 1.25; letter-spacing: .03em; }
+.page-intro p { color: var(--muted); margin-top: .4rem; }
+
+.layout { display: grid; gap: 1.25rem; padding-bottom: 3rem; }
+.filters, .card, .empty {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .9rem;
+}
+.filters { padding: 1rem; }
+.filters h2, .section-title h2 { font-size: 1.15rem; line-height: 1.4; }
+.filters h2 { margin-bottom: .65rem; }
+.filters label { display: block; margin-bottom: .25rem; color: var(--muted); font-size: .875rem; font-weight: 650; }
+
+input, select, button {
+  font: inherit;
+  color: inherit;
+}
+
+input, select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .45rem .6rem;
+  border: 1px solid #aab8cd;
+  border-radius: .5rem;
+  background-color: #fff;
+}
+input::placeholder { color: #576680; opacity: 1; }
+.select-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: .55rem; }
+.select-fields > div { position: relative; min-width: 0; }
+select { appearance: none; padding-right: 1.35rem; text-overflow: ellipsis; }
+.select-fields > div::after {
+  content: "";
+  position: absolute;
+  right: .53rem;
+  bottom: 1.15rem;
+  width: .43rem;
+  height: .43rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+button {
+  min-height: 2.75rem;
+  margin-top: .4rem;
+  padding: .3rem .5rem;
+  border: 0;
+  border-radius: .4rem;
+  background: #e8f1fd;
+  color: #17477e;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.results { min-width: 0; }
+.reservation-section + .reservation-section { margin-top: 1.65rem; }
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .65rem;
+}
+.count { color: var(--muted); font-size: .875rem; flex: none; }
+.card { margin-top: .55rem; }
+.card summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .65rem;
+  padding: .85rem;
+  cursor: pointer;
+  border-radius: inherit;
+  list-style: none;
+}
+.card summary::-webkit-details-marker { display: none; }
+.card summary:hover { background: #f7faff; }
+.overview { display: block; min-width: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: .3rem; }
+.category, .status, .deadline-warning {
+  display: inline-block;
+  padding: .13rem .48rem;
+  border-radius: .35rem;
+  font-size: .875rem;
+  font-weight: 650;
+  background: #edf0f5;
+  color: #465269;
+}
+.category { background: #e9f1fc; color: #224f83; }
+.status.active { background: #e0f4ec; color: #195945; }
+.provider { display: block; font-size: 1.16rem; font-weight: 700; line-height: 1.4; margin-top: .38rem; }
+.dates { display: block; font-weight: 650; margin-top: .18rem; }
+.trip { display: block; color: var(--muted); font-size: .875rem; margin-top: .1rem; }
+.deadline { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem; margin-top: .45rem; font-size: .875rem; }
+.deadline-label { color: var(--muted); }
+.due-date { font-weight: 650; }
+.deadline-warning { background: #fff0d8; color: #754400; }
+.disclosure {
+  align-self: center;
+  flex: none;
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.card[open] summary { border-bottom: 1px solid var(--line); border-radius: .9rem .9rem 0 0; }
+.card[open] .disclosure { text-decoration: underline; text-underline-offset: .2em; }
+.card-panel { padding: .85rem; }
+.detail-fields { display: grid; gap: .55rem; }
+.detail-fields > div { display: grid; grid-template-columns: minmax(0, 6.9rem) minmax(0, 1fr); gap: .5rem; }
+.detail-fields dt { color: var(--muted); font-size: .875rem; }
+.detail-fields dd { white-space: pre-wrap; }
+.detail-fields a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.deadline-note { margin-top: .75rem; background: #fff5e4; padding: .65rem; border-radius: .5rem; }
+.empty { padding: 1rem; color: var(--muted); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 42rem) {
+  .shell { width: min(100% - 3rem, 70rem); }
+  .page-intro { padding-block: 2.4rem 1.3rem; }
+  .filters, .card summary, .card-panel { padding: 1rem 1.2rem; }
+  .detail-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 59rem) {
+  .layout { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .select-fields { grid-template-columns: 1fr; }
+}
+</style>
+  <script type="module">// Bundled source: reservations.mjs
+const types = new Map([
+  ['hotel', 'ホテル'],
+  ['transport', '交通・レンタカー'],
+  ['restaurant', 'レストラン'],
+]);
+
+const statuses = new Map([
+  ['active', '予約中'],
+  ['cancelled', 'キャンセル済'],
+  ['completed', '完了済'],
+  ['unknown', '未登録・その他'],
+]);
+
+function tokyoDate(now = new Date()) {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(now);
+}
+
+function validDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + 'T00:00:00Z');
+  return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value;
+}
+
+function formatDate(value) {
+  if (!validDate(value)) return '未登録';
+  const [year, month, day] = value.split('-');
+  return `${year}年${Number(month)}月${Number(day)}日`;
+}
+
+function deadlineState(value, today) {
+  if (!validDate(value)) return 'missing';
+  if (value < today) return 'passed';
+  return value === today ? 'today' : 'future';
+}
+
+function sourceMailUrl(value) {
+  if (typeof value !== 'string' || !value.startsWith('https://')) return null;
+  try {
+    const url = new URL(value);
+    if (url.origin === 'https://mail.example.invalid' && !url.username && !url.password) {
+      return url.href;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+const normalized = value => String(value ?? '').normalize('NFKC').toLowerCase().trim();
+
+function selectReservations(rows, { type = '', status = '', query = '' }, today) {
+  const terms = normalized(query).split(/\s+/).filter(Boolean);
+  const groups = { upcoming: [], other: [], history: [] };
+  const matches = rows.filter(row => {
+    const knownStatus = statuses.has(row.status) ? row.status : 'unknown';
+    if ((type && row.type !== type) || (status && knownStatus !== status)) return false;
+
+    const fields = [
+      row.provider, row.tripName, row.reference, row.notes, types.get(row.type),
+      statuses.get(knownStatus),
+    ].map(normalized);
+    return terms.every(term => fields.some(field => field.includes(term)));
+  });
+
+  matches.sort((a, b) => {
+    const first = validDate(a.startDate) ? a.startDate : '9999-99-99';
+    const second = validDate(b.startDate) ? b.startDate : '9999-99-99';
+    return first.localeCompare(second);
+  });
+
+  for (const row of matches) {
+    if (row.status === 'cancelled' || row.status === 'completed') {
+      groups.history.push(row);
+    } else if (row.status === 'active' && validDate(row.startDate) && row.startDate >= today) {
+      groups.upcoming.push(row);
+    } else {
+      groups.other.push(row);
+    }
+  }
+  return groups;
+}
+
+
+// Bundled source: sheet-reservations.mjs
+
+
+const reservationTabs = [
+  ['ホテル予約', 'hotel'],
+  ['交通・レンタカー', 'transport'],
+  ['レストラン予約', 'restaurant'],
+];
+
+const reservationStatuses = new Map([
+  ['予約中', 'active'],
+  ['キャンセル済', 'cancelled'],
+  ['完了済', 'completed'],
+]);
+
+const displayColumns = [
+  '利用開始日', '利用終了日', '旅行・イベント名', '予約先', '予約番号',
+  '人数', '金額', '支払状況', '予約状況', '無料キャンセル期限', '備考', '元メール',
+];
+
+function displayText(value) {
+  return typeof value === 'string' && value.trim() ? value : '';
+}
+
+function sheetDate(value) {
+  const text = value.trim();
+  const slashDate = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(text);
+  const iso = slashDate
+    ? [slashDate[1], slashDate[2].padStart(2, '0'), slashDate[3].padStart(2, '0')].join('-')
+    : text;
+  return validDate(iso) ? iso : '';
+}
+
+function mapTab(values, type) {
+  if (!Array.isArray(values) || !Array.isArray(values[0])) return [];
+
+  const headers = values[0].map(cell => displayText(cell).trim());
+  const columns = displayColumns.map(label => {
+    const index = headers.indexOf(label);
+    return index === headers.lastIndexOf(label) ? index : -1;
+  });
+  const records = [];
+
+  for (const row of values.slice(1)) {
+    if (!Array.isArray(row)) continue;
+    const cells = columns.map(index => index < 0 ? '' : displayText(row[index]));
+    if (cells.every(cell => !cell)) continue;
+
+    const [start, end, tripName, provider, reference, guests, amount, payment, status, deadline, notes, mail] = cells;
+    records.push({
+      type,
+      startDate: sheetDate(start),
+      endDate: sheetDate(end),
+      tripName,
+      provider,
+      reference,
+      guests,
+      amount,
+      payment,
+      status: reservationStatuses.get(status.trim()) ?? 'unknown',
+      deadline: sheetDate(deadline),
+      notes,
+      sourceMail: sourceMailUrl(mail.trim()) ?? '',
+    });
+  }
+  return records;
+}
+
+// Each input tab is a matrix of displayed cells with a header row.
+// The tab name determines the G1 type. Other tabs and non-display columns are ignored.
+function mapReservationTabs(tabs) {
+  return reservationTabs.flatMap(([name, type]) => mapTab(tabs?.[name], type));
+}
+
+
+// Bundled source: synthetic-data.mjs
+
+
+// G1 local source. Dates are relative so the demo keeps all deadline states over time.
+function syntheticReservations({ today }) {
+  function day(offset) {
+    const date = new Date(today + 'T00:00:00Z');
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+  }
+
+  const headers = [
+    '利用開始日', '利用終了日', '旅行・イベント名', '予約先', '予約番号',
+    '人数', '金額', '支払状況', '予約状況', '無料キャンセル期限', '備考', '元メール',
+  ];
+  return mapReservationTabs({
+    ホテル予約: [
+      headers,
+      [
+        day(10), day(12), '空色の週末', '架空ホテル 凪のテラス', 'DEMO-STAY-01',
+        '3名', '¥42,800（税込）', '支払済', '予約中', day(7),
+        '朝食付き。チェックインは15時から。', 'https://mail.example.invalid/demo/stay-01',
+      ],
+      [
+        day(25), day(26), '冬の散歩', '架空ロッジ 白樺の窓', 'DEMO-STAY-05',
+        '2名', '¥16,000', '未払い', 'キャンセル済',
+      ],
+    ],
+    '交通・レンタカー': [
+      headers,
+      [
+        day(11), day(13), '', '架空レンタカー 青い岬', 'DEMO-CAR-02',
+        '3名', 'JPY 18,600', '現地払い', '予約中', day(-1),
+        '受取・返却は同じ店舗。', 'https://mail.example.invalid/demo/car-02',
+      ],
+      [
+        day(21), '', '', '架空鉄道 みずいろ線', '',
+        '2名', '', '', '予約中', day(0),
+      ],
+    ],
+    レストラン予約: [
+      headers,
+      [
+        day(12), day(12), '', '架空ダイニング 星灯り', 'DEMO-FOOD-03',
+        '3名', '¥9,900（税込）', '現地払い', '予約中', '',
+        '夕食のテーブル席。', 'https://mail.example.invalid/demo/food-03',
+      ],
+      [
+        day(-6), day(-6), '', '架空カフェ 月の舟', 'DEMO-FOOD-06',
+        '2名', '¥3,200', '支払済', '完了済',
+      ],
+      [
+        '', '', '', '架空食堂 風見の庭', 'DEMO-FOOD-07',
+        '', '', '', '予約中', '', '利用日を確認中。',
+      ],
+    ],
+  });
+}
+
+
+// Bundled source: display-data-boundary.mjs
+
+
+// Phase 15 preparation: project ONLY a pre-existing G1 *synthetic* row set.
+// This is a display/data-minimization boundary, never authentication.
+// Real Sheets/API/Google credentials are intentionally unsupported.
+const TYPES = new Set(['hotel', 'transport', 'restaurant']);
+const STATUSES = new Set(['active', 'cancelled', 'completed', 'unknown']);
+const TEXT = [
+  'tripName', 'provider', 'reference', 'guests', 'amount', 'payment', 'notes',
+];
+const DATE = ['startDate', 'endDate', 'deadline'];
+const MAX_ROWS = 1000;
+const MAX_TEXT_LENGTH = 2048;
+const fail = () => { throw new Error('TRAVEL_DISPLAY_SOURCE_REJECTED'); };
+
+function projectFixtureReservations(rows, { mode = 'SYNTHETIC_G1' } = {}) {
+  if (mode !== 'SYNTHETIC_G1' || !Array.isArray(rows) || rows.length > MAX_ROWS) fail();
+
+  return rows.map((record) => {
+    if (record === null || typeof record !== 'object' || Array.isArray(record)) fail();
+    if (!TYPES.has(record.type) || !STATUSES.has(record.status)) fail();
+
+    // Explicit projection; arbitrary upstream columns do not cross into the UI.
+    const result = { type: record.type, status: record.status };
+    for (const key of TEXT) {
+      const value = record[key] ?? '';
+      if (typeof value !== 'string' || value.length > MAX_TEXT_LENGTH) fail();
+      result[key] = value;
+    }
+    for (const key of DATE) {
+      const value = record[key] ?? '';
+      if (typeof value !== 'string' || (value !== '' && !validDate(value))) fail();
+      result[key] = value;
+    }
+    const link = record.sourceMail ?? '';
+    if (typeof link !== 'string' || link.length > MAX_TEXT_LENGTH) fail();
+    // G1 permits only a reserved fictitious origin, never a live mailbox link.
+    result.sourceMail = sourceMailUrl(link) ?? '';
+    return Object.freeze(result);
+  });
+}
+
+
+// Bundled source: app.mjs
+
+
+
+
+const query = document.querySelector('#query');
+const type = document.querySelector('#type');
+const status = document.querySelector('#status');
+const reset = document.querySelector('#reset');
+const results = document.querySelector('#reservations');
+const count = document.querySelector('#result-count');
+
+const groupTitles = {
+  upcoming: '今後の予約',
+  other: '利用日・状態の確認が必要な予約',
+  history: 'キャンセル済・完了済',
+};
+const deadlineLabels = { missing: '未登録', passed: '期限経過', today: '本日が期限' };
+
+function element(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+}
+
+function display(value) {
+  return String(value ?? '').trim() ? String(value) : '未登録';
+}
+
+function addOptions(select, options) {
+  for (const [value, label] of options) select.add(new Option(label, value));
+}
+
+function reservationCard(row, today) {
+  const statusLabel = row.status === 'unknown' || !statuses.has(row.status)
+    ? '未登録' : statuses.get(row.status);
+  const state = deadlineState(row.deadline, today);
+  const end = formatDate(row.endDate);
+  const start = formatDate(row.startDate);
+  const dates = end !== '未登録' && start !== end ? `${start} 〜 ${end}` : start;
+  const card = element('details', undefined, 'card');
+  const summary = element('summary');
+  const overview = element('span', undefined, 'overview');
+  const tags = element('span', undefined, 'tags');
+  tags.append(
+    element('span', display(types.get(row.type)), 'category'),
+    element('span', statusLabel, row.status === 'active' ? 'status active' : 'status'),
+  );
+  overview.append(tags, element('span', display(row.provider), 'provider'), element('span', dates, 'dates'));
+  if (row.tripName?.trim()) overview.append(element('span', row.tripName, 'trip'));
+
+  const deadline = element('span', undefined, 'deadline');
+  deadline.append(element('span', '無料キャンセル期限', 'deadline-label'));
+  const due = element('span', formatDate(row.deadline), 'due-date');
+  deadline.append(due);
+  if (state === 'today' || state === 'passed') {
+    deadline.append(element('span', deadlineLabels[state], 'deadline-warning'));
+  }
+  overview.append(deadline);
+  summary.append(overview, element('span', '詳細', 'disclosure'));
+  card.append(summary);
+
+  const panel = element('div', undefined, 'card-panel');
+  const fields = element('dl', undefined, 'detail-fields');
+  const url = sourceMailUrl(row.sourceMail);
+  const mail = url ? element('a', '元メールを開く（架空リンク）') : '未登録';
+  if (url) {
+    mail.href = url;
+    mail.target = '_blank';
+    mail.rel = 'noopener noreferrer';
+  }
+  const detail = [
+    ['利用開始日', start], ['利用終了日', end],
+    ['予約種別', display(types.get(row.type))], ['予約先', display(row.provider)],
+    ['旅行・イベント名', display(row.tripName)], ['予約番号', display(row.reference)],
+    ['人数', display(row.guests)], ['金額（原表記）', display(row.amount)],
+    ['支払状況', display(row.payment)], ['予約状況', statusLabel],
+    ['無料キャンセル期限', deadlineLabels[state] && state !== 'missing'
+      ? `${formatDate(row.deadline)}（${deadlineLabels[state]}）` : formatDate(row.deadline)],
+    ['備考', display(row.notes)], ['元メール', mail],
+  ];
+  for (const [label, value] of detail) {
+    const field = element('div');
+    const definition = element('dd');
+    definition.append(value);
+    field.append(element('dt', label), definition);
+    fields.append(field);
+  }
+  panel.append(fields);
+  if (state === 'passed') {
+    panel.append(element('p', 'キャンセルの成立や料金の有無は予約先の案内をご確認ください。', 'deadline-note'));
+  }
+  card.append(panel);
+  return card;
+}
+
+function render(rows, today) {
+  const filters = { type: type.value, status: status.value, query: query.value };
+  reset.hidden = !Object.values(filters).some(Boolean);
+  const groups = selectReservations(rows, filters, today);
+  const total = Object.values(groups).reduce((sum, list) => sum + list.length, 0);
+  count.textContent = `表示中の予約は${total}件です。`;
+
+  if (total === 0) {
+    const message = rows.length ? '条件に一致する予約がありません。' : '予約はまだ登録されていません。';
+    results.replaceChildren(element('p', message, 'empty'));
+    return;
+  }
+
+  const sections = [];
+  for (const [group, list] of Object.entries(groups)) {
+    if (!list.length && group !== 'upcoming') continue;
+    const section = element('section', undefined, 'reservation-section');
+    const heading = element('h2', groupTitles[group]);
+    heading.id = `section-${group}`;
+    section.setAttribute('aria-labelledby', heading.id);
+    const title = element('header', undefined, 'section-title');
+    title.append(heading, element('span', `${list.length}件`, 'count'));
+    section.append(title);
+    for (const row of list) section.append(reservationCard(row, today));
+    if (!list.length) section.append(element('p', '該当する今後の予約はありません。', 'empty'));
+    sections.push(section);
+  }
+  results.replaceChildren(...sections);
+}
+
+// The source provides presentation records. The view only reads them.
+const today = tokyoDate();
+const rows = projectFixtureReservations(syntheticReservations({ today }));
+const refresh = () => render(rows, today);
+
+addOptions(type, types);
+addOptions(status, statuses);
+query.addEventListener('input', refresh);
+type.addEventListener('change', refresh);
+status.addEventListener('change', refresh);
+reset.addEventListener('click', () => {
+  query.value = type.value = status.value = '';
+  query.focus();
+  refresh();
+});
+refresh();
+</script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell masthead-inner">
+      <span class="brand">旅行予約台帳</span>
+      <span class="demo">試作版 · 架空データ</span>
+    </div>
+  </header>
+  <main class="shell">
+    <header class="page-intro">
+      <h1>予約一覧</h1>
+      <p>利用日や無料キャンセル期限を確認できます。</p>
+    </header>
+    <div class="layout">
+      <section class="filters" aria-labelledby="filters-title">
+        <h2 id="filters-title">絞り込み</h2>
+        <div class="search-field">
+          <label for="query">キーワード</label>
+          <input id="query" type="search" placeholder="予約先・旅行名・予約番号" autocomplete="off">
+        </div>
+        <div class="select-fields">
+          <div>
+            <label for="type">予約種別</label>
+            <select id="type"><option value="">すべて</option></select>
+          </div>
+          <div>
+            <label for="status">予約状態</label>
+            <select id="status"><option value="">すべて</option></select>
+          </div>
+        </div>
+        <button id="reset" type="button" hidden>絞り込みを解除</button>
+      </section>
+      <div class="results">
+        <p id="result-count" class="sr-only" role="status"></p>
+        <noscript><p class="empty">予約を表示するには JavaScript を有効にしてください。</p></noscript>
+        <div id="reservations"></div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
